@@ -1,0 +1,7 @@
+# Build
+/src/libpngu-mod.a
+/src/pngu-mod.d
+/src/pngu-mod.o
+
+# Visual Studio Code
+/.vscode/*

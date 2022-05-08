@@ -11,7 +11,7 @@ libpngu-mod is based on [libpngu](https://wiibrew.org/wiki/PNGU) with [GRRLIB pa
 * Converts images to YCbYCr, linear RGB565, linear RGBA8, 4x4 RGB565, 4x4 RGB5A3 and 4x4 RGBA8 formats
 * Saves YCbYCr images in png RGB8 format
 * Handles images stored in memory or in devoptab devices (SD, USB, SDGecko, etc...)
-* Ready to be used in multithreaded applications.
+* Ready to be used in multithreaded applications
 
 ## Limitations
 * Image width and height should be a multiple of 4

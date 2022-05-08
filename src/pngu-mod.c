@@ -18,9 +18,9 @@ By frontier, The GRRLIB Team, and HTV04
 #define PNGU_SOURCE_DEVICE			2
 
 #define _SHIFTL(v, s, w)	\
-    ((PNGU_u32) (((PNGU_u32)(v) & ((0x01 << (w)) - 1)) << (s)))
+	((PNGU_u32) (((PNGU_u32)(v) & ((0x01 << (w)) - 1)) << (s)))
 #define _SHIFTR(v, s, w)	\
-    ((PNGU_u32)(((PNGU_u32)(v) >> (s)) & ((0x01 << (w)) - 1)))
+	((PNGU_u32)(((PNGU_u32)(v) >> (s)) & ((0x01 << (w)) - 1)))
 
 // Prototypes of helper functions
 int pngu_info (IMGCTX ctx);
@@ -214,7 +214,7 @@ int PNGU_DecodeToRGBA8 (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, void *buffe
 	buffWidth = width + stride;
 
 	// Check is source image has an alpha channel
-	if ( (ctx->prop.imgColorType == PNGU_COLOR_TYPE_GRAY_ALPHA) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB_ALPHA) )
+	if ( (ctx->prop.imgColorType == PNGU_COLOR_TYPE_GRAY_ALPHA) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB_ALPHA  || ctx->prop.imgColorType == PNGU_COLOR_TYPE_PALETTE) )
 	{
 		// Alpha channel present, copy image to the output buffer
 		for (y = 0; y < height; y++)
@@ -324,7 +324,7 @@ int PNGU_DecodeTo4x4RGB5A3 (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, void *b
 	qheight = height / 4;
 
 	// Check is source image has an alpha channel
-	if ( (ctx->prop.imgColorType == PNGU_COLOR_TYPE_GRAY_ALPHA) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB_ALPHA) )
+	if ( (ctx->prop.imgColorType == PNGU_COLOR_TYPE_GRAY_ALPHA) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB_ALPHA) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_PALETTE) )
 	{
 		// Alpha channel present, copy image to the output buffer
 		for (y = 0; y < qheight; y++)
@@ -633,7 +633,8 @@ PNGU_u8 * PNGU_DecodeTo4x4RGBA8 (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, in
 				}
 
 				if (ctx->prop.imgColorType == PNGU_COLOR_TYPE_GRAY_ALPHA ||
-					ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB_ALPHA)
+					ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB_ALPHA ||
+					ctx->prop.imgColorType == PNGU_COLOR_TYPE_PALETTE)
 				{
 					if(xRatio > 0)
 						pixel = &(ctx->row_pointers[y2][x2*4]);
@@ -695,21 +696,21 @@ int PNGU_EncodeFromRGB (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, void *buffe
 
 	// Allocation of libpng structs
 	ctx->png_ptr = png_create_write_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if (!(ctx->png_ptr))
+	if (!(ctx->png_ptr))
 	{
 		if (ctx->source == PNGU_SOURCE_DEVICE)
 			fclose (ctx->fd);
-        return PNGU_LIB_ERROR;
+		return PNGU_LIB_ERROR;
 	}
 
-    ctx->info_ptr = png_create_info_struct (ctx->png_ptr);
-    if (!(ctx->info_ptr))
-    {
+	ctx->info_ptr = png_create_info_struct (ctx->png_ptr);
+	if (!(ctx->info_ptr))
+	{
 		png_destroy_write_struct (&(ctx->png_ptr), (png_infopp)NULL);
 		if (ctx->source == PNGU_SOURCE_DEVICE)
 			fclose (ctx->fd);
-        return PNGU_LIB_ERROR;
-    }
+		return PNGU_LIB_ERROR;
+	}
 
 	if (ctx->source == PNGU_SOURCE_BUFFER)
 	{
@@ -724,7 +725,7 @@ int PNGU_EncodeFromRGB (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, void *buffe
 	}
 
 	// Setup output file properties
-    png_set_IHDR (ctx->png_ptr, ctx->info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB,
+	png_set_IHDR (ctx->png_ptr, ctx->info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB,
 				PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
 	// Allocate memory to store the image in RGB format
@@ -815,29 +816,29 @@ int PNGU_EncodeFromGXTexture (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, void 
 // Coded by Crayon for GRRLIB (https://github.com/GRRLIB/GRRLIB)
 int PNGU_EncodeFromEFB (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, PNGU_u32 stride)
 {
-    int res;
-    PNGU_u32 x,y, tmpy, tmpxy, regval, val;
-    unsigned char * tmpbuffer = (unsigned char *)malloc(width*height*3);
-    memset(tmpbuffer, 0, width*height*3);
+	int res;
+	PNGU_u32 x,y, tmpy, tmpxy, regval, val;
+	unsigned char * tmpbuffer = (unsigned char *)malloc(width*height*3);
+	memset(tmpbuffer, 0, width*height*3);
 
-    for(y=0; y < height; y++)
-    {
-        tmpy = y * 640*3;
-        for(x=0; x < width; x++)
-        {
-            regval = 0xc8000000|(_SHIFTL(x,2,10));
-            regval = (regval&~0x3FF000)|(_SHIFTL(y,12,10));
-            val = *(PNGU_u32*)regval;
-            tmpxy = x * 3 + tmpy;
-            tmpbuffer[tmpxy  ] = _SHIFTR(val,16,8); // R
-            tmpbuffer[tmpxy+1] = _SHIFTR(val,8,8);  // G
-            tmpbuffer[tmpxy+2] = val&0xff;          // B
-        }
-    }
+	for(y=0; y < height; y++)
+	{
+		tmpy = y * 640*3;
+		for(x=0; x < width; x++)
+		{
+			regval = 0xc8000000|(_SHIFTL(x,2,10));
+			regval = (regval&~0x3FF000)|(_SHIFTL(y,12,10));
+			val = *(PNGU_u32*)regval;
+			tmpxy = x * 3 + tmpy;
+			tmpbuffer[tmpxy  ] = _SHIFTR(val,16,8); // R
+			tmpbuffer[tmpxy+1] = _SHIFTR(val,8,8);  // G
+			tmpbuffer[tmpxy+2] = val&0xff;          // B
+		}
+	}
 
-    res = PNGU_EncodeFromRGB (ctx, width, height, tmpbuffer, stride);
-    free(tmpbuffer);
-    return res;
+	res = PNGU_EncodeFromRGB (ctx, width, height, tmpbuffer, stride);
+	free(tmpbuffer);
+	return res;
 }
 
 
@@ -865,21 +866,21 @@ int PNGU_EncodeFromYCbYCr (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, void *bu
 
 	// Allocation of libpng structs
 	ctx->png_ptr = png_create_write_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if (!(ctx->png_ptr))
+	if (!(ctx->png_ptr))
 	{
 		if (ctx->source == PNGU_SOURCE_DEVICE)
 			fclose (ctx->fd);
-        return PNGU_LIB_ERROR;
+		return PNGU_LIB_ERROR;
 	}
 
-    ctx->info_ptr = png_create_info_struct (ctx->png_ptr);
-    if (!(ctx->info_ptr))
-    {
+	ctx->info_ptr = png_create_info_struct (ctx->png_ptr);
+	if (!(ctx->info_ptr))
+	{
 		png_destroy_write_struct (&(ctx->png_ptr), (png_infopp)NULL);
 		if (ctx->source == PNGU_SOURCE_DEVICE)
 			fclose (ctx->fd);
-        return PNGU_LIB_ERROR;
-    }
+		return PNGU_LIB_ERROR;
+	}
 
 	if (ctx->source == PNGU_SOURCE_BUFFER)
 	{
@@ -894,7 +895,7 @@ int PNGU_EncodeFromYCbYCr (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, void *bu
 	}
 
 	// Setup output file properties
-    png_set_IHDR (ctx->png_ptr, ctx->info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB,
+	png_set_IHDR (ctx->png_ptr, ctx->info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB,
 				PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
 	// Allocate memory to store the image in RGB format
@@ -1014,7 +1015,7 @@ int pngu_info (IMGCTX ctx)
 			return PNGU_CANT_OPEN_FILE;
 
 		// Load first 8 bytes into magic buffer
-        if (fread (magic, 1, 8, ctx->fd) != 8)
+		if (fread (magic, 1, 8, ctx->fd) != 8)
 		{
 			fclose (ctx->fd);
 			return PNGU_CANT_READ_FILE;
@@ -1033,21 +1034,21 @@ int pngu_info (IMGCTX ctx)
 
 	// Allocation of libpng structs
 	ctx->png_ptr = png_create_read_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if (!(ctx->png_ptr))
+	if (!(ctx->png_ptr))
 	{
 		if (ctx->source == PNGU_SOURCE_DEVICE)
 			fclose (ctx->fd);
-        return PNGU_LIB_ERROR;
+		return PNGU_LIB_ERROR;
 	}
 
-    ctx->info_ptr = png_create_info_struct (ctx->png_ptr);
-    if (!(ctx->info_ptr))
-    {
+	ctx->info_ptr = png_create_info_struct (ctx->png_ptr);
+	if (!(ctx->info_ptr))
+	{
 		if (ctx->source == PNGU_SOURCE_DEVICE)
 			fclose (ctx->fd);
-        png_destroy_read_struct (&(ctx->png_ptr), (png_infopp)NULL, (png_infopp)NULL);
-        return PNGU_LIB_ERROR;
-    }
+		png_destroy_read_struct (&(ctx->png_ptr), (png_infopp)NULL, (png_infopp)NULL);
+		return PNGU_LIB_ERROR;
+	}
 
 	if (ctx->source == PNGU_SOURCE_BUFFER)
 	{
@@ -1104,7 +1105,7 @@ int pngu_info (IMGCTX ctx)
 
 		// Query background color, if any.
 		ctx->prop.validBckgrnd = 0;
-		if (((ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB_ALPHA)) &&
+		if (((ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB_ALPHA) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_PALETTE)) &&
 			(png_get_bKGD (ctx->png_ptr, ctx->info_ptr, &background)))
 		{
 			ctx->prop.validBckgrnd = 1;
@@ -1122,7 +1123,7 @@ int pngu_info (IMGCTX ctx)
 		// Query list of transparent colors, if any.
 		ctx->prop.numTrans = 0;
 		ctx->prop.trans = NULL;
-		if (((ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB_ALPHA)) &&
+		if (((ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB_ALPHA) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_PALETTE)) &&
 			(png_get_tRNS (ctx->png_ptr, ctx->info_ptr, &trans, (int *) &(ctx->prop.numTrans), &trans_values)))
 		{
 			if (ctx->prop.numTrans)
@@ -1182,24 +1183,24 @@ int pngu_decode (IMGCTX ctx, PNGU_u32 width, PNGU_u32 height, PNGU_u32 stripAlph
 		return PNGU_INVALID_WIDTH_OR_HEIGHT;
 
 	// Check if color type is supported by PNGU
-	if ( (ctx->prop.imgColorType == PNGU_COLOR_TYPE_PALETTE) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_UNKNOWN) )
+	if (ctx->prop.imgColorType == PNGU_COLOR_TYPE_UNKNOWN)
 		return PNGU_UNSUPPORTED_COLOR_TYPE;
 
 	// Scale 16 bit samples to 8 bit
 	if (ctx->prop.imgBitDepth == 16)
-        png_set_strip_16 (ctx->png_ptr);
+		png_set_strip_16 (ctx->png_ptr);
 
 	// Remove alpha channel if we don't need it
 	if (stripAlpha && ((ctx->prop.imgColorType == PNGU_COLOR_TYPE_RGB_ALPHA) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_GRAY_ALPHA)))
-        png_set_strip_alpha (ctx->png_ptr);
+		png_set_strip_alpha (ctx->png_ptr);
 
 	// Expand 1, 2 and 4 bit samples to 8 bit
 	if (ctx->prop.imgBitDepth < 8)
-        png_set_packing (ctx->png_ptr);
+		png_set_packing (ctx->png_ptr);
 
-	// Transform grayscale images to RGB
-	if ( (ctx->prop.imgColorType == PNGU_COLOR_TYPE_GRAY) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_GRAY_ALPHA) )
-		png_set_gray_to_rgb (ctx->png_ptr);
+	// Convert color types to RGB
+	if ( (ctx->prop.imgColorType == PNGU_COLOR_TYPE_GRAY) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_GRAY_ALPHA) || (ctx->prop.imgColorType == PNGU_COLOR_TYPE_PALETTE) )
+		png_set_expand (ctx->png_ptr);
 
 	// Flush transformations
 	png_read_update_info (ctx->png_ptr, ctx->info_ptr);

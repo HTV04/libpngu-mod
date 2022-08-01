@@ -13,8 +13,8 @@ endif
 include $(DEVKITPPC)/base_rules
 MACHDEP =  -DGEKKO -mcpu=750 -meabi -mhard-float
 
-INSTALL_INC	:=	$(DEVKITPRO)/portlibs/ppc/include
-INSTALL_LIB	:=	$(DEVKITPRO)/portlibs/ppc/lib
+INSTALL_INC	:=	$(DESTDIR)$(DEVKITPRO)/portlibs/ppc/include
+INSTALL_LIB	:=	$(DESTDIR)$(DEVKITPRO)/portlibs/ppc/lib
 
 INCLUDE	:= -I$(DEVKITPRO)/portlibs/ppc/include
 CFLAGS  := -O2 -Wall $(MACHDEP) $(INCLUDE)
